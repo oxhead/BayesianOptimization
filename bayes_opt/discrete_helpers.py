@@ -6,7 +6,7 @@ from scipy.stats import norm
 from scipy.optimize import minimize
 
 
-def acq_max(ac, gp, y_max, space):
+def acq_max(ac, gp, y_max, space, explored_space):
     """
     A function to find the maximum of the acquisition function
 
@@ -36,10 +36,14 @@ def acq_max(ac, gp, y_max, space):
 
     # Warm up with random points
     # let's evaluate all points for now
-    x_tries = space
+    # print('space:', space)
+    # print('explored:', explored_space)
+    x_tries = [x for x in space if x not in explored_space]
+    # print("@", x_tries)
 
     ys = ac(x_tries, gp=gp, y_max=y_max)
     x_max = x_tries[ys.argmax()]
+    # print('pick:', x_max)
     # max_acq = ys.max()
 
     return np.array(x_max)

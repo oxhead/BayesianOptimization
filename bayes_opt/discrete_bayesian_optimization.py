@@ -37,6 +37,9 @@ class DiscreteBayesianOptimization(object):
         self.initialized = False
 
         # Initialization lists --- stores starting points before process begins
+        self.selected_init_points = []
+        self.selected_steps = []
+        self.steps = []
         self.init_points = []
         self.x_init = []
         self.y_init = []
@@ -258,6 +261,8 @@ class DiscreteBayesianOptimization(object):
                 self.plog.print_header()
             self.init(init_points)
 
+        self.selected_init_points = self.X
+
         y_max = self.Y.max()
 
         # Set parameters if any was passed
@@ -284,16 +289,15 @@ class DiscreteBayesianOptimization(object):
             x_max = acq_max(ac=self.util.utility,
                             gp=self.gp,
                             y_max=y_max,
-                            space=self.space)
+                            space=self.space,
+                            explored_space=[tuple(t) for t in self.X])
 
             # Test if x_max is repeated, if it is, draw another one at random
             # If it is repeated, print a warning
             pwarning = False
-            if np.any((self.X - x_max).sum(axis=1) == 0):
-
-                x_max = np.asarray(self.space[np.random.choice(len(self.space))])
-
-                pwarning = True
+            # if np.any((self.X - x_max).sum(axis=1) == 0):
+            #    x_max = np.asarray(self.space[np.random.choice(len(self.space))])
+            #    pwarning = True
 
             # Append most recently generated values to X and Y arrays
             self.X = np.vstack((self.X, x_max.reshape((1, -1))))
@@ -310,7 +314,7 @@ class DiscreteBayesianOptimization(object):
                 y_max = self.Y[-1]
             else:
                 max_ei_ratio = 0
-            print(max_ei_ratio)
+            # print(max_ei_ratio)
 
             # Maximize acquisition function to find next probing point
             # x_max = acq_max(ac=self.util.utility,
@@ -331,6 +335,7 @@ class DiscreteBayesianOptimization(object):
                                }
             self.res['all']['values'].append(self.Y[-1])
             self.res['all']['params'].append(dict(zip(self.keys, self.X[-1])))
+            self.selected_steps.append(self.X[-1])
 
             # stopping criteria
             if (i+1) >= n_iter and max_ei_ratio < 0.1:
@@ -339,6 +344,10 @@ class DiscreteBayesianOptimization(object):
         # Print a final report if verbose active.
         if self.verbose:
             self.plog.print_summary()
+
+        self.selected_init_points = [tuple(x) for x in self.selected_init_points]
+        self.selected_steps = [tuple(x) for x in self.selected_steps]
+        self.steps = self.selected_init_points + self.selected_steps
 
     def points_to_csv(self, file_name):
         """
